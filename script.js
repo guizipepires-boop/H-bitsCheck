@@ -13,12 +13,16 @@ const weekDates = document.getElementById('week-dates');
 const modalOverlay = document.getElementById('habit-modal');
 const habitNameInput = document.getElementById('habit-name-input');
 const emptyState = document.getElementById('empty-state');
+const contextMenu = document.getElementById('context-menu');
+let currentHabitIdForMenu = null;
+let longPressTimer;
 
 // Initialization
 document.addEventListener('DOMContentLoaded', () => {
     updateWeekDisplay();
     renderHabits();
     setupEventListeners();
+    setupContextMenuListeners();
 });
 
 // --- Core Logic ---
@@ -75,15 +79,14 @@ function renderHabits() {
     habits.forEach(habit => {
         const row = document.createElement('tr');
 
-        // Name Cell
+        // Name Cell (with Long Press logic)
         const nameCell = document.createElement('td');
         nameCell.className = 'habit-name-cell';
-        nameCell.innerHTML = `
-            <span class="habit-name">${habit.name}</span>
-            <button class="delete-habit-btn" onclick="deleteHabit(${habit.id})" title="Excluir hábito">
-                <i class="fa-solid fa-trash-can"></i>
-            </button>
-        `;
+        nameCell.innerHTML = `<span class="habit-name">${habit.name}</span>`;
+
+        // Attach Long Press Listeners
+        addLongPressListeners(nameCell, habit.id);
+
         row.appendChild(nameCell);
 
         // Days Cells
@@ -114,6 +117,57 @@ function renderHabits() {
     });
 }
 
+function addLongPressListeners(element, habitId) {
+    const duration = 2000; // 2 seconds
+
+    const start = (e) => {
+        longPressTimer = setTimeout(() => {
+            showContextMenu(e, habitId);
+        }, duration);
+    };
+
+    const cancel = () => {
+        if (longPressTimer) clearTimeout(longPressTimer);
+    };
+
+    // Touch
+    element.addEventListener('touchstart', start, { passive: true });
+    element.addEventListener('touchend', cancel);
+    element.addEventListener('touchmove', cancel);
+
+    // Mouse
+    element.addEventListener('mousedown', start);
+    element.addEventListener('mouseup', cancel);
+    element.addEventListener('mouseleave', cancel);
+}
+
+function showContextMenu(event, habitId) {
+    currentHabitIdForMenu = habitId;
+    event.preventDefault(); // Prevent text selection/default context menu
+
+    let x, y;
+    if (event.touches) {
+        x = event.touches[0].clientX;
+        y = event.touches[0].clientY;
+    } else {
+        x = event.clientX;
+        y = event.clientY;
+    }
+
+    // Adjust if too close to right edge
+    if (x > window.innerWidth - 130) x = window.innerWidth - 130;
+    // Adjust if too close to bottom
+    if (y > window.innerHeight - 100) y = window.innerHeight - 100;
+
+    // Position menu
+    contextMenu.style.top = `${y}px`;
+    contextMenu.style.left = `${x}px`;
+    contextMenu.classList.add('open');
+
+    if (navigator.vibrate) navigator.vibrate(50);
+}
+
+
 function updateWeekDisplay() {
     const dates = getDatesForWeek(currentWeekOffset);
     weekDates.textContent = getWeekLabel(dates);
@@ -124,6 +178,47 @@ function updateWeekDisplay() {
     else if (currentWeekOffset === -1) label.textContent = 'Semana Passada';
     else if (currentWeekOffset === 1) label.textContent = 'Próxima Semana';
     else label.textContent = currentWeekOffset < 0 ? `${Math.abs(currentWeekOffset)} semanas atrás` : `Em ${currentWeekOffset} semanas`;
+}
+
+// --- Context Menu Actions ---
+
+function setupContextMenuListeners() {
+    document.getElementById('ctx-rename').addEventListener('click', () => {
+        closeContextMenu();
+        renameHabit(currentHabitIdForMenu);
+    });
+
+    document.getElementById('ctx-delete').addEventListener('click', () => {
+        closeContextMenu();
+        deleteHabit(currentHabitIdForMenu);
+    });
+
+    // Close when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!contextMenu.contains(e.target)) {
+            closeContextMenu();
+        }
+    });
+
+    // Close on scroll
+    window.addEventListener('scroll', closeContextMenu);
+}
+
+function closeContextMenu() {
+    contextMenu.classList.remove('open');
+    currentHabitIdForMenu = null;
+}
+
+function renameHabit(id) {
+    const habit = habits.find(h => h.id === id);
+    if (!habit) return;
+
+    const newName = prompt("Renomear hábito:", habit.name);
+    if (newName && newName.trim() !== "") {
+        habit.name = newName.trim();
+        saveHabits();
+        renderHabits();
+    }
 }
 
 // --- Actions ---
