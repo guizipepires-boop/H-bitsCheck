@@ -89,7 +89,7 @@ function renderHabits() {
 
         // Days Cells
         currentWeekDates.forEach(dateStr => {
-            const cell = document('td');
+            const cell = document.createElement('td');
             const status = habit.checks[dateStr] || 'empty';
 
             let icon = '';
