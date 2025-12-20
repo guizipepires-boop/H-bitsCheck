@@ -158,13 +158,15 @@ function updateWeekDisplay() {
 
 function setupContextMenuListeners() {
     document.getElementById('ctx-rename').addEventListener('click', () => {
+        const id = currentHabitIdForMenu;
         closeContextMenu();
-        renameHabit(currentHabitIdForMenu);
+        renameHabit(id);
     });
 
     document.getElementById('ctx-delete').addEventListener('click', () => {
+        const id = currentHabitIdForMenu;
         closeContextMenu();
-        deleteHabit(currentHabitIdForMenu);
+        deleteHabit(id);
     });
 
     // Close when clicking outside
