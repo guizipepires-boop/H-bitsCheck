@@ -79,19 +79,17 @@ function renderHabits() {
     habits.forEach(habit => {
         const row = document.createElement('tr');
 
-        // Name Cell (with Long Press logic)
+        // Name Cell (Click for Context Menu)
         const nameCell = document.createElement('td');
         nameCell.className = 'habit-name-cell';
         nameCell.innerHTML = `<span class="habit-name">${habit.name}</span>`;
-
-        // Attach Long Press Listeners
-        addLongPressListeners(nameCell, habit.id);
+        nameCell.onclick = (e) => showContextMenu(e, habit.id);
 
         row.appendChild(nameCell);
 
         // Days Cells
         currentWeekDates.forEach(dateStr => {
-            const cell = document.createElement('td');
+            const cell = document('td');
             const status = habit.checks[dateStr] || 'empty';
 
             let icon = '';
@@ -117,33 +115,9 @@ function renderHabits() {
     });
 }
 
-function addLongPressListeners(element, habitId) {
-    const duration = 2000; // 2 seconds
-
-    const start = (e) => {
-        longPressTimer = setTimeout(() => {
-            showContextMenu(e, habitId);
-        }, duration);
-    };
-
-    const cancel = () => {
-        if (longPressTimer) clearTimeout(longPressTimer);
-    };
-
-    // Touch
-    element.addEventListener('touchstart', start, { passive: true });
-    element.addEventListener('touchend', cancel);
-    element.addEventListener('touchmove', cancel);
-
-    // Mouse
-    element.addEventListener('mousedown', start);
-    element.addEventListener('mouseup', cancel);
-    element.addEventListener('mouseleave', cancel);
-}
-
 function showContextMenu(event, habitId) {
     currentHabitIdForMenu = habitId;
-    event.preventDefault(); // Prevent text selection/default context menu
+    event.stopPropagation(); // Stop bubbling (important for click interaction)
 
     let x, y;
     if (event.touches) {

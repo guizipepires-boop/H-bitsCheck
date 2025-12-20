@@ -221,20 +221,19 @@ h1 {
 
 .habits-table td:first-child {
     text-align: left;
-    padding-left: 8px;
-    /* Even tighter */
+    padding-left: 6px;
+    /* Tighter padding */
     background: white;
     font-family: Arial, sans-serif;
-    /* Requested font */
-    font-size: 12px;
-    /* Smaller font */
+    font-size: 11px;
+    /* Reduced further */
     font-weight: 400;
-    /* Thinner */
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     user-select: none;
-    /* Prevent text selection during long press */
+    cursor: pointer;
+    /* Indication that it's clickable */
 }
 
 /* Habit Row Styles */
