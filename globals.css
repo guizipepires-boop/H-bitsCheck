@@ -1,0 +1,153 @@
+import { useRouter } from 'next/router';
+import React, { useState } from 'react';
+import { useAppContext, Habit, Entry, Goal } from '@/components/AppContext';
+import dayjs from 'dayjs';
+import AddEntryModal from '@/components/AddEntryModal';
+import CreateGoalModal from '@/components/CreateGoalModal';
+import GoalProgress from '@/components/GoalProgress';
+import HistoryChart from '@/components/HistoryChart';
+
+const HabitDetailPage: React.FC = () => {
+  const router = useRouter();
+  const { id } = router.query;
+  const {
+    habits,
+    entries,
+    goals,
+    addEntry,
+    undoLastEntry,
+    createGoal,
+    deleteHabit,
+  } = useAppContext();
+  const habit = habits.find((h) => h.id === id);
+  const [showEntry, setShowEntry] = useState(false);
+  const [showGoal, setShowGoal] = useState(false);
+
+  if (!habit) {
+    return (
+      <div className="p-4 text-center text-gray-400">Hábito não encontrado.</div>
+    );
+  }
+  const today = dayjs().format('YYYY-MM-DD');
+  const habitEntries = entries.filter((e) => e.habitId === habit.id);
+  const todayEntries = habitEntries.filter((e) => e.date === today);
+  const todayTotal = todayEntries.reduce((sum, e) => sum + e.value, 0);
+  const total = habitEntries.reduce((sum, e) => sum + e.value, 0);
+  const activeGoal = goals
+    .filter((g) => g.habitId === habit.id && g.status === 'active')
+    .sort((a, b) => dayjs(b.createdAt).diff(dayjs(a.createdAt)))[0];
+  const handleDelete = () => {
+    if (confirm('Tem certeza de que deseja excluir este hábito?')) {
+      deleteHabit(habit.id);
+      router.push('/');
+    }
+  };
+  return (
+    <div className="mx-auto max-w-3xl px-4 py-6">
+      <header className="mb-4 flex items-center justify-between">
+        <button
+          className="text-xl text-primary hover:opacity-80"
+          onClick={() => router.push('/')}
+        >
+          ←
+        </button>
+        <h1 className="flex-1 text-center text-2xl font-bold text-white">
+          {habit.name}
+        </h1>
+        <button
+          className="text-xl text-red-500 hover:opacity-80"
+          onClick={handleDelete}
+        >
+          🗑️
+        </button>
+      </header>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="rounded-lg bg-card p-4 text-center">
+          <p className="text-sm text-gray-400">Hoje</p>
+          <p className="text-4xl font-bold text-primary">{todayTotal}</p>
+        </div>
+        <div className="rounded-lg bg-card p-4 text-center">
+          <p className="text-sm text-gray-400">Total</p>
+          <p className="text-4xl font-bold text-primary">{total}</p>
+        </div>
+      </div>
+      {/* Quick Add Buttons */}
+      <div className="mt-4 flex items-center space-x-2">
+        {habit.quickAddValues.map((v) => (
+          <button
+            key={v}
+            onClick={() => addEntry(habit.id, v)}
+            className="rounded-md border border-primary px-4 py-1 text-primary hover:bg-primary hover:text-black"
+          >
+            +{v}
+          </button>
+        ))}
+        <button
+          onClick={() => setShowEntry(true)}
+          className="flex h-8 w-8 items-center justify-center rounded-md border border-primary text-primary hover:bg-primary hover:text-black"
+        >
+          +
+        </button>
+      </div>
+      {/* Undo last entry */}
+      <button
+        className="mt-3 flex items-center space-x-2 text-sm text-primary hover:underline"
+        onClick={() => undoLastEntry(habit.id)}
+      >
+        <span>↩︎</span>
+        <span>Desfazer última entrada</span>
+      </button>
+      {/* Goal section */}
+      <div className="mt-6">
+        {activeGoal ? (
+          <GoalProgress goal={activeGoal} entries={entries} />
+        ) : (
+          <button
+            onClick={() => setShowGoal(true)}
+            className="w-full rounded-md bg-card p-4 text-center text-primary hover:bg-gray-800"
+          >
+            + Criar Meta
+          </button>
+        )}
+      </div>
+      {/* History Chart */}
+      <div className="mt-6">
+        <h2 className="mb-2 text-lg font-semibold text-white">Últimos 7 dias</h2>
+        <HistoryChart habitId={habit.id} entries={entries} days={7} />
+      </div>
+      {/* Today's Entries */}
+      <div className="mt-6">
+        <h2 className="mb-2 text-lg font-semibold text-white">Registros de hoje</h2>
+        {todayEntries.length === 0 ? (
+          <p className="text-gray-400">Nenhum registro hoje.</p>
+        ) : (
+          <ul className="space-y-1 text-sm text-gray-300">
+            {todayEntries
+              .sort((a, b) => dayjs(b.createdAt).diff(dayjs(a.createdAt)))
+              .map((e) => (
+                <li key={e.id} className="flex justify-between">
+                  <span>{dayjs(e.createdAt).format('HH:mm')}</span>
+                  <span>+{e.value}</span>
+                </li>
+              ))}
+          </ul>
+        )}
+      </div>
+      {/* Modals */}
+      <AddEntryModal
+        visible={showEntry}
+        habitName={habit.name}
+        onClose={() => setShowEntry(false)}
+        onSubmit={(value) => addEntry(habit.id, value)}
+      />
+      <CreateGoalModal
+        visible={showGoal}
+        habitName={habit.name}
+        onClose={() => setShowGoal(false)}
+        onSubmit={(target, duration) => createGoal(habit.id, target, duration)}
+      />
+    </div>
+  );
+};
+
+export default HabitDetailPage;
